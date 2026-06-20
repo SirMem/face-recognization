@@ -176,8 +176,13 @@ class ThemeManager(QObject):
         ctx.update(self.colors)
         ctx.update({f"spacing_{k}": v for k, v in self.spacing.items()})
         ctx.update({f"font_size_{k}": v for k, v in self.font.items() if k.startswith("size_")})
+        ctx.update({k: v for k, v in self.font.items()})
         ctx.update({f"radius_{k}": v for k, v in self.radius.items()})
-        app.setStyleSheet(template.format(**ctx))
+        # 安全替换：避免 CSS { } 与 str.format() 冲突
+        qss = template
+        for key, value in ctx.items():
+            qss = qss.replace(f"{{{key}}}", str(value))
+        app.setStyleSheet(qss)
 
     def switch_to(self, mode: str):
         """便捷方法：直接切换。"""

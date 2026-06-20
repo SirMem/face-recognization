@@ -1,14 +1,12 @@
 """Attendance resources: query records & statistics."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 
 from flask_jwt_extended import jwt_required
 from flask_smorest import Blueprint
-from sqlalchemy import func
 
-from app.extensions import db
-from app.models import Attendance, Course, Student
-from app.schemas import AttendanceQuerySchema, AttendanceRecordSchema, AttendanceStatsSchema
+from app.models import Attendance, Student
+from app.schemas import AttendanceQuerySchema, AttendanceRecordSchema, AttendanceStatsSchema, DashboardStatsSchema
 
 blp = Blueprint("attendance", __name__, url_prefix="/attendance", description="考勤记录查询与统计")
 
@@ -90,4 +88,75 @@ def attendance_statistics(args):
         "rate": rate,
         "date_from": str(date_from),
         "date_to": str(args.get("date_to", "")) if args.get("date_to") else str(datetime.now().date()),
+    }
+
+
+@blp.route("/dashboard", methods=["GET"])
+@jwt_required()
+@blp.response(200, DashboardStatsSchema)
+def dashboard_stats():
+    """Dashboard 面板数据：今日统计 + 趋势对比 + 近 7 天每日分布。"""
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    days = [today - timedelta(days=i) for i in range(7)]
+
+    # ── Helper: count by status for a given date ──
+    def _stats_for_day(d: date) -> dict:
+        dt_from = datetime.combine(d, datetime.min.time())
+        dt_to = datetime.combine(d, datetime.max.time())
+        q = Attendance.query.filter(
+            Attendance.checkin_time >= dt_from,
+            Attendance.checkin_time <= dt_to,
+        )
+        total = q.count()
+        present = q.filter(Attendance.status == "present").count()
+        late = q.filter(Attendance.status == "late").count()
+        absent = q.filter(Attendance.status == "absent").count()
+        return {"total": total, "present": present, "late": late, "absent": absent}
+
+    # ── Today's stats ──
+    today_stats = _stats_for_day(today)
+
+    # ── Trend (today vs yesterday) ──
+    yesterday_stats = _stats_for_day(yesterday)
+
+    def _trend_str(current: int, previous: int) -> str | None:
+        if previous == 0:
+            return None
+        pct = round((current - previous) / previous * 100)
+        if pct > 0:
+            return f"+{pct}%"
+        if pct < 0:
+            return f"{pct}%"
+        return "0%"
+
+    present_trend = _trend_str(today_stats["present"], yesterday_stats["present"])
+    absent_trend = _trend_str(today_stats["absent"], yesterday_stats["absent"])
+
+    # ── Daily series (last 7 days) ──
+    daily_series = []
+    for d in reversed(days):
+        s = _stats_for_day(d)
+        daily_series.append({
+            "date": str(d),
+            "present": s["present"],
+            "late": s["late"],
+            "absent": s["absent"],
+        })
+
+    # ── Total expected = total attendance today (present + late + absent) ──
+    total_expected = today_stats["total"]
+
+    total_all = today_stats["total"]
+    rate = round(today_stats["present"] / total_all * 100, 2) if total_all > 0 else 0.0
+
+    return {
+        "total_expected": total_expected,
+        "present": today_stats["present"],
+        "late": today_stats["late"],
+        "absent": today_stats["absent"],
+        "rate": rate,
+        "present_trend": present_trend,
+        "absent_trend": absent_trend,
+        "daily_series": daily_series,
     }

@@ -28,4 +28,22 @@ class AttendanceStatsSchema(Schema):
     present = fields.Int()
     late = fields.Int()
     absent = fields.Int()
-    rate = fields.Float()  # attendance rate %
+    rate = fields.Float()
+
+
+class DailySeriesItem(Schema):
+    date = fields.Str()
+    present = fields.Int()
+    late = fields.Int()
+    absent = fields.Int()
+
+
+class DashboardStatsSchema(Schema):
+    total_expected = fields.Int()
+    present = fields.Int()
+    late = fields.Int()
+    absent = fields.Int()
+    rate = fields.Float()
+    present_trend = fields.Str(allow_none=True)
+    absent_trend = fields.Str(allow_none=True)
+    daily_series = fields.List(fields.Nested(DailySeriesItem))

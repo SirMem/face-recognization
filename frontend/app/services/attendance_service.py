@@ -1,4 +1,4 @@
-"""AttendanceService — 考勤明细 + 统计。"""
+"""AttendanceService — 考勤明细 + 统计 + Dashboard。"""
 from __future__ import annotations
 
 from app.services.api_client import ApiClient, ApiResult
@@ -21,6 +21,9 @@ class AttendanceService(ApiClient):
         if result.ok:
             store.update_stats(result.data)
         return result
+
+    def get_dashboard(self) -> ApiResult:
+        return self._get("/attendance/dashboard")
 
 
 attendance_service = AttendanceService()
