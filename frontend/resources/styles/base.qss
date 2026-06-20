@@ -1,0 +1,188 @@
+/* VisionAttend — QSS 基础模板
+ *
+ * 使用 {placeholder} 语法，由 ThemeManager 在运行时替换为 Token 值。
+ * 占位符来源：theme.py 中的 COLORS_DARK/LIGHT、SPACING、FONT、RADIUS。
+ */
+
+/* ── 全局 ────────────────────────────────────────────────────────────── */
+QWidget {
+    font-family: {family};
+    font-size: {font_size_md}px;
+    color: {text_primary};
+}
+
+/* ── 主窗口 ──────────────────────────────────────────────────────────── */
+#mainWindow {
+    background-color: {surface_page};
+}
+
+/* ── 页面标题 ────────────────────────────────────────────────────────── */
+#pageTitle {
+    font-size: {font_size_2xl}px;
+    font-weight: {weight_bold};
+    color: {text_primary};
+}
+
+#sectionTitle {
+    font-size: {font_size_sm}px;
+    font-weight: {weight_semibold};
+    color: {text_secondary};
+    padding-top: {spacing_sm}px;
+}
+
+/* ── 统计卡片 ────────────────────────────────────────────────────────── */
+StatCard {
+    background-color: {surface_card};
+    border-radius: {radius_lg}px;
+    border: 1px solid {border};
+}
+
+#statValue {
+    font-size: {font_size_2xl}px;
+    font-weight: {weight_bold};
+    color: {text_primary};
+}
+
+#statLabel {
+    font-size: {font_size_xs}px;
+    color: {text_secondary};
+}
+
+/* ── 操作卡片 ────────────────────────────────────────────────────────── */
+ActionCard {
+    background-color: {surface_card};
+    border-radius: {radius_lg}px;
+    border: 1px solid {border};
+}
+
+ActionCard:hover {
+    background-color: {primary_light};
+    border-color: {primary};
+}
+
+#actionTitle {
+    font-size: {font_size_lg}px;
+    font-weight: {weight_semibold};
+    color: {text_primary};
+}
+
+#actionDesc {
+    font-size: {font_size_xs}px;
+    color: {text_secondary};
+}
+
+/* ── 表单卡片 ────────────────────────────────────────────────────────── */
+#formCard {
+    background-color: {surface_card};
+    border-radius: {radius_lg}px;
+    border: 1px solid {border};
+}
+
+/* ── 表格 ────────────────────────────────────────────────────────────── */
+#dataTable, QTableWidget {
+    background-color: {surface_card};
+    color: {text_primary};
+    border: 1px solid {border};
+    border-radius: {radius_md}px;
+    gridline-color: {border};
+}
+
+QTableWidget::item {
+    padding: 6px 10px;
+}
+
+QTableWidget::item:selected {
+    background-color: {primary_light};
+    color: {text_primary};
+}
+
+QHeaderView::section {
+    background-color: {surface_sidebar};
+    color: {text_secondary};
+    padding: 7px 10px;
+    border: none;
+    border-bottom: 1px solid {border};
+    font-weight: {weight_semibold};
+    font-size: {font_size_xs}px;
+}
+
+/* ── 按钮 ────────────────────────────────────────────────────────────── */
+#primaryBtn {
+    background-color: {primary};
+    color: {text_on_primary};
+    border: none;
+    border-radius: {radius_md}px;
+    padding: 7px 18px;
+    font-weight: {weight_semibold};
+}
+
+#primaryBtn:hover {
+    background-color: {primary_hover};
+}
+
+#primaryBtn:disabled {
+    background-color: {border};
+    color: {text_disabled};
+}
+
+#dangerBtn {
+    background-color: transparent;
+    color: {danger};
+    border: 1px solid {danger};
+    border-radius: {radius_sm}px;
+    padding: 4px 12px;
+}
+
+#dangerBtn:hover {
+    background-color: {danger};
+    color: {text_on_primary};
+}
+
+/* ── 输入框 ──────────────────────────────────────────────────────────── */
+QLineEdit, QComboBox, QDateEdit {
+    background-color: {surface_card};
+    color: {text_primary};
+    border: 1px solid {border};
+    border-radius: {radius_sm}px;
+    padding: 6px 10px;
+}
+
+QLineEdit:focus, QComboBox:focus, QDateEdit:focus {
+    border-color: {border_focus};
+}
+
+/* ── 摄像头 / 结果面板 ──────────────────────────────────────────────── */
+#cameraPanel, #resultPanel {
+    background-color: {surface_card};
+    border-radius: {radius_lg}px;
+    border: 1px solid {border};
+}
+
+#cameraView {
+    background-color: {surface_page};
+    border-radius: {radius_md}px;
+    color: {text_disabled};
+}
+
+/* ── 状态提示 ────────────────────────────────────────────────────────── */
+#statusHint {
+    color: {text_secondary};
+    font-size: {font_size_xs}px;
+}
+
+/* ── 滚动条 ──────────────────────────────────────────────────────────── */
+QScrollBar:vertical {
+    background-color: transparent;
+    width: 6px;
+    border: none;
+}
+
+QScrollBar::handle:vertical {
+    background-color: {border};
+    border-radius: 3px;
+    min-height: 24px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}

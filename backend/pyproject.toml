@@ -1,0 +1,28 @@
+[project]
+name = "face-recognition-backend"
+version = "0.1.0"
+description = "人脸识别考勤系统后端"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0,<4.0",
+    "flask-smorest>=0.47.0",
+    "flask-jwt-extended>=4.7.0",
+    "flask-marshmallow>=0.15.0",
+    "flask-sqlalchemy>=3.1.0",
+    "flask-migrate>=4.0.0",
+    "flask-limiter>=3.8.0",
+    "marshmallow>=3.21.0",
+    "sqlalchemy>=2.0.0",
+    "pymysql>=1.1.0",
+    "argon2-cffi>=23.1.0",
+    "loguru>=0.7.0",
+    "python-dotenv>=1.0.0",
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+    "tensorflow>=2.18.0",
+    "keras>=3.0.0",
+    "h5py>=3.0.0",
+]
+
+[tool.uv]
+dev-dependencies = []

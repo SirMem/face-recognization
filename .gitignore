@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+
+# Uploads
+uploads/
+
+# Secrets
+.env
+
+# Claude Code personal config
+.claude/
+
+# Backend instance (SQLite DB)
+instance/
+
+# Old PyQt5 frontend archive
+frontend_pyqt5_archived/
+
+# OS
+Thumbs.db
+.DS_Store
