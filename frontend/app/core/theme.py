@@ -14,25 +14,33 @@ from PySide6.QtGui import QColor, QPalette
 # ── Design Tokens ──────────────────────────────────────────────────────
 
 COLORS_LIGHT = {
-    "primary": "#003d9b",
-    "primary_hover": "#002f7a",
-    "primary_light": "#e8efff",
+    # Brand
+    "primary": "#0052cc",
+    "primary_hover": "#003d99",
+    "primary_light": "#e6f0ff",
+    # Surface hierarchy
     "surface_page": "#f9f9ff",
+    "surface_dim": "#cadbfc",
     "surface_card": "#ffffff",
+    "surface_container_low": "#f0f3ff",
     "surface_sidebar": "#ffffff",
+    # Text
     "text_primary": "#1e293b",
     "text_secondary": "#64748b",
     "text_disabled": "#94a3b8",
     "text_on_primary": "#ffffff",
+    # Status
     "success": "#22c55e",
     "warning": "#f59e0b",
     "danger": "#ef4444",
     "info": "#3b82f6",
-    "border": "#c3c6d6",
-    "border_focus": "#003d9b",
+    # Attendance status
     "status_present": "#22c55e",
     "status_late": "#f59e0b",
     "status_absent": "#ef4444",
+    # Border
+    "border": "#e1e2ec",
+    "border_focus": "#0052cc",
 }
 
 COLORS_DARK = {
@@ -40,7 +48,9 @@ COLORS_DARK = {
     "primary_hover": "#3b82f6",
     "primary_light": "#1e3a5f",
     "surface_page": "#0f172a",
+    "surface_dim": "#0a0f1e",
     "surface_card": "#1e293b",
+    "surface_container_low": "#162032",
     "surface_sidebar": "#1e293b",
     "text_primary": "#f1f5f9",
     "text_secondary": "#94a3b8",
@@ -50,11 +60,11 @@ COLORS_DARK = {
     "warning": "#fbbf24",
     "danger": "#f87171",
     "info": "#60a5fa",
-    "border": "#334155",
-    "border_focus": "#60a5fa",
     "status_present": "#4ade80",
     "status_late": "#fbbf24",
     "status_absent": "#f87171",
+    "border": "#334155",
+    "border_focus": "#60a5fa",
 }
 
 SPACING = {
@@ -74,18 +84,19 @@ FONT = {
     "size_md": 14,
     "size_lg": 16,
     "size_xl": 20,
-    "size_2xl": 32,
+    "size_2xl": 24,
     "size_3xl": 48,
     "weight_regular": 400,
+    "weight_medium": 500,
     "weight_semibold": 600,
     "weight_bold": 700,
 }
 
 RADIUS = {
     "sm": 4,
-    "md": 6,
-    "lg": 8,
-    "xl": 12,
+    "md": 4,
+    "lg": 4,
+    "xl": 4,
 }
 
 

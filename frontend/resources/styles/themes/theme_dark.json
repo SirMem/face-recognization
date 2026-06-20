@@ -4,7 +4,9 @@
     "primary_hover": "#3b82f6",
     "primary_light": "#1e3a5f",
     "surface_page": "#0f172a",
+    "surface_dim": "#0a0f1e",
     "surface_card": "#1e293b",
+    "surface_container_low": "#162032",
     "surface_sidebar": "#1e293b",
     "text_primary": "#f1f5f9",
     "text_secondary": "#94a3b8",
@@ -14,18 +16,18 @@
     "warning": "#fbbf24",
     "danger": "#f87171",
     "info": "#60a5fa",
-    "border": "#334155",
-    "border_focus": "#60a5fa",
     "status_present": "#4ade80",
     "status_late": "#fbbf24",
-    "status_absent": "#f87171"
+    "status_absent": "#f87171",
+    "border": "#334155",
+    "border_focus": "#60a5fa"
   },
   "spacing": { "xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32, "xxl": 48 },
   "font": {
     "family": "Inter",
     "family_mono": "JetBrains Mono",
     "size_xs": 10, "size_sm": 12, "size_md": 14, "size_lg": 16,
-    "size_xl": 20, "size_2xl": 32, "size_3xl": 48
+    "size_xl": 20, "size_2xl": 24, "size_3xl": 48
   },
-  "radius": { "sm": 4, "md": 6, "lg": 8, "xl": 12 }
+  "radius": { "sm": 4, "md": 4, "lg": 4, "xl": 4 }
 }

@@ -1,0 +1,33 @@
+{
+  "colors": {
+    "primary": "#0052cc",
+    "primary_hover": "#003d99",
+    "primary_light": "#e6f0ff",
+    "surface_page": "#f9f9ff",
+    "surface_dim": "#cadbfc",
+    "surface_card": "#ffffff",
+    "surface_container_low": "#f0f3ff",
+    "surface_sidebar": "#ffffff",
+    "text_primary": "#1e293b",
+    "text_secondary": "#64748b",
+    "text_disabled": "#94a3b8",
+    "text_on_primary": "#ffffff",
+    "success": "#22c55e",
+    "warning": "#f59e0b",
+    "danger": "#ef4444",
+    "info": "#3b82f6",
+    "status_present": "#22c55e",
+    "status_late": "#f59e0b",
+    "status_absent": "#ef4444",
+    "border": "#e1e2ec",
+    "border_focus": "#0052cc"
+  },
+  "spacing": { "xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32, "xxl": 48 },
+  "font": {
+    "family": "Inter",
+    "family_mono": "JetBrains Mono",
+    "size_xs": 10, "size_sm": 12, "size_md": 14, "size_lg": 16,
+    "size_xl": 20, "size_2xl": 24, "size_3xl": 48
+  },
+  "radius": { "sm": 4, "md": 4, "lg": 4, "xl": 4 }
+}
