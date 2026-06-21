@@ -1,7 +1,7 @@
 """AttendancePage — 考勤记录查询页，对齐 Figma 设计。"""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QThread, Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
 )
 
 from app.pages.base_page import BasePage
+from app.services.attendance_service import attendance_service
+from app.services.course_service import course_service
 
 # ── Figma colors ──────────────────────────────────────────────────────────
 _BG = "#f9f9ff"
@@ -91,10 +93,34 @@ class StatCard(QFrame):
         layout.addLayout(row)
 
 
+# ── Worker — 后台取数据 ─────────────────────────────────────────────────
+
+class AttendanceWorker(QThread):
+    finished = Signal(object)
+
+    def __init__(self, fn, params=None):
+        super().__init__()
+        self._fn = fn
+        self._params = params
+
+    def run(self):
+        try:
+            result = self._fn(self._params) if self._params else self._fn()
+        except Exception as e:
+            result = type("R", (), {"ok": False, "data": None, "message": str(e)})()
+        self.finished.emit(result)
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 
 class AttendancePage(BasePage):
     """考勤明细：筛选栏 + 统计摘要 + 表格 + 分页。"""
+
+    def __init__(self, parent=None):
+        self._workers: list[QThread] = []
+        self._current_page = 1
+        self._course_map: dict[str, int] = {}
+        super().__init__(parent)
 
     def setup_ui(self):
         self.setObjectName("attendancePage")
@@ -124,9 +150,9 @@ class AttendancePage(BasePage):
         h_layout.addLayout(left)
         h_layout.addStretch()
 
-        export_btn = QPushButton("  Export CSV")
-        export_btn.setObjectName("exportCsvBtn")
-        export_btn.setStyleSheet(f"""
+        self.export_btn = QPushButton("  Export CSV")
+        self.export_btn.setObjectName("exportCsvBtn")
+        self.export_btn.setStyleSheet(f"""
             #exportCsvBtn {{
                 background: {_WHITE};
                 border: 1px solid {_BORDER};
@@ -137,9 +163,10 @@ class AttendancePage(BasePage):
             }}
             #exportCsvBtn:hover {{ background: {_TABLE_HEADER_BG}; }}
         """)
-        export_btn.setFixedHeight(42)
-        export_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        h_layout.addWidget(export_btn)
+        self.export_btn.setFixedHeight(42)
+        self.export_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.export_btn.setVisible(False)  # ponytail: hide, add when needed
+        h_layout.addWidget(self.export_btn)
 
         root.addWidget(header)
         root.addSpacing(24)
@@ -161,9 +188,9 @@ class AttendancePage(BasePage):
         filter_layout.setContentsMargins(16, 16, 16, 16)
         filter_layout.setSpacing(16)
 
-        self.date_combo = self._filter_dropdown("DATE RANGE", "Last 7 Days")
-        self.course_combo = self._filter_dropdown("COURSE", "All Courses")
-        self.status_combo = self._filter_dropdown("STATUS", "All Statuses")
+        self.date_combo = self._filter_dropdown("DATE RANGE", ["Last 7 Days", "Today", "This Month", "All Time"])
+        self.course_combo = self._filter_dropdown("COURSE", ["All Courses"])
+        self.status_combo = self._filter_dropdown("STATUS", ["All Statuses", "Present", "Late", "Absent"])
 
         filter_layout.addWidget(self.date_combo)
         filter_layout.addWidget(self.course_combo)
@@ -186,6 +213,7 @@ class AttendancePage(BasePage):
         """)
         search_btn.setFixedHeight(40)
         search_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        search_btn.clicked.connect(self._on_search)
         filter_layout.addWidget(search_btn, alignment=Qt.AlignmentFlag.AlignBottom)
 
         root.addWidget(filter_bar)
@@ -229,10 +257,10 @@ class AttendancePage(BasePage):
 
         self.table = QTableWidget()
         self.table.setObjectName("attTable")
-        self.table.setColumnCount(7)
+        self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
             "STUDENT NAME", "STUDENT ID", "COURSE",
-            "CHECK-IN TIME", "STATUS", "CONFIDENCE", "ACTIONS"
+            "CHECK-IN TIME", "STATUS", "CONFIDENCE",
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().setVisible(False)
@@ -286,39 +314,51 @@ class AttendancePage(BasePage):
         self.pag_label = QLabel("Showing 0 of 0 entries")
         self.pag_label.setStyleSheet(f"color: {_TEXT_SECONDARY}; font-size: 14px;")
         pag_layout.addWidget(self.pag_label)
+
         pag_layout.addStretch()
 
-        # Page buttons
-        pag_nav = QHBoxLayout()
-        pag_nav.setSpacing(4)
-        for p in ["1", "2", "3", "..."]:
-            btn = QPushButton(p)
-            btn.setFixedSize(28, 28)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            is_active = p == "1"
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background: {_BRAND if is_active else "transparent"};
-                    border: none;
-                    border-radius: 2px;
-                    color: {_WHITE if is_active else _TEXT_SECONDARY};
-                    font-size: {14 if is_active else 14}px;
-                    font-weight: {700 if is_active else 400};
-                }}
-                QPushButton:hover {{
-                    background: {_TABLE_HEADER_BG if not is_active else _BRAND};
-                    color: {_TEXT_PRIMARY if not is_active else _WHITE};
-                }}
-            """)
-            pag_nav.addWidget(btn)
-        pag_layout.addLayout(pag_nav)
+        # prev / next buttons
+        self.prev_btn = QPushButton("Prev")
+        self.prev_btn.setFixedHeight(28)
+        self.prev_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.prev_btn.setStyleSheet(self._pag_btn_style())
+        self.prev_btn.clicked.connect(self._prev_page)
+        pag_layout.addWidget(self.prev_btn)
+
+        self.page_label = QLabel("Page 1")
+        self.page_label.setStyleSheet(f"color: {_TEXT_PRIMARY}; font-size: 14px; padding: 0 12px;")
+        pag_layout.addWidget(self.page_label)
+
+        self.next_btn = QPushButton("Next")
+        self.next_btn.setFixedHeight(28)
+        self.next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.next_btn.setStyleSheet(self._pag_btn_style())
+        self.next_btn.clicked.connect(self._next_page)
+        pag_layout.addWidget(self.next_btn)
 
         table_layout.addWidget(pagination)
         root.addWidget(table_container, 1)
 
+    @staticmethod
+    def _pag_btn_style() -> str:
+        return f"""
+            QPushButton {{
+                background: transparent;
+                border: 1px solid {_BORDER};
+                border-radius: 2px;
+                color: {_TEXT_SECONDARY};
+                font-size: 13px;
+                padding: 0 12px;
+            }}
+            QPushButton:hover {{
+                background: {_TABLE_HEADER_BG};
+                color: {_TEXT_PRIMARY};
+            }}
+        """
+
     # ── Filter dropdown helper ──
 
-    def _filter_dropdown(self, label: str, default: str) -> QFrame:
+    def _filter_dropdown(self, label: str, items: list[str]) -> QFrame:
         container = QFrame()
         container.setFixedSize(257, 66)
         vbox = QVBoxLayout(container)
@@ -344,7 +384,7 @@ class AttendancePage(BasePage):
 
         combo = QComboBox()
         combo.setObjectName("filterCombo")
-        combo.addItems([default])
+        combo.addItems(items)
         combo.setStyleSheet(f"""
             QComboBox#filterCombo {{
                 background: transparent;
@@ -366,47 +406,182 @@ class AttendancePage(BasePage):
         vbox.addWidget(shell)
         return container
 
-    # ── Data ──
+    # ── Lifecycle ──
 
     def bind(self):
-        pass
+        """加载课程列表到筛选器（页面首次展示时调用）。"""
+        self._fetch_courses()
 
     def refresh(self):
-        self._load_demo()
+        """页面切回时重新加载。"""
+        self._current_page = 1
+        self._fetch_records()
+        self._fetch_stats()
 
-    def _load_demo(self):
-        """Load demo data to match Figma layout."""
-        data = [
-            ("Alex Chen",      "STU-9281", "CS101", "08:55:12 AM", "PRESENT", "99.8%"),
-            ("Sarah Jenkins",  "STU-4412", "CS101", "08:58:45 AM", "PRESENT", "98.2%"),
-            ("Marcus Johnson", "STU-7734", "CS101", "09:12:05 AM", "LATE",    "95.4%"),
-            ("Emily Davis",    "STU-1190", "CS101", "--:--:--",    "ABSENT",  "--"),
-            ("David Kim",      "STU-5521", "ENG202","10:45:22 AM", "PRESENT", "99.9%"),
-            ("Priya Patel",    "STU-8832", "ENG202","10:52:10 AM", "PRESENT", "72.1%"),
-        ]
-        self.table.setRowCount(len(data))
-        for r, (name, sid, course, time, status, conf) in enumerate(data):
-            for c, val in enumerate([name, sid, course, time]):
-                item = QTableWidgetItem(val)
-                item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter)
-                if status == "ABSENT":
-                    item.setForeground(Qt.GlobalColor.gray)
-                self.table.setItem(r, c, item)
+    # ── API calls ──
 
-            # Status column — use custom widget
+    def _fetch_courses(self):
+        w = AttendanceWorker(course_service.list)
+        w.finished.connect(self._handle_courses)
+        w.finished.connect(w.deleteLater)
+        self._workers.append(w)
+        w.start()
+
+    def _fetch_records(self):
+        params = self._build_query_params()
+        params["page"] = self._current_page
+        params["per_page"] = 15
+        w = AttendanceWorker(attendance_service.list_records, params)
+        w.finished.connect(self._handle_records)
+        w.finished.connect(w.deleteLater)
+        self._workers.append(w)
+        w.start()
+
+    def _fetch_stats(self):
+        params = self._build_query_params()
+        w = AttendanceWorker(attendance_service.get_statistics, params)
+        w.finished.connect(self._handle_stats)
+        w.finished.connect(w.deleteLater)
+        self._workers.append(w)
+        w.start()
+
+    def _build_query_params(self) -> dict:
+        params = {}
+
+        # ponytail: date range mapped to date_from/date_to
+        date_text = self.date_combo.findChild(QComboBox).currentText()
+        if date_text == "Today":
+            from datetime import date
+            params["date_from"] = str(date.today())
+            params["date_to"] = str(date.today())
+        elif date_text == "This Month":
+            from datetime import date
+            today = date.today()
+            params["date_from"] = today.replace(day=1).isoformat()
+            params["date_to"] = str(today)
+        # "Last 7 Days" / "All Time" → 不传参，后端默认 last 7 days
+
+        course_text = self.course_combo.findChild(QComboBox).currentText()
+        if course_text and course_text != "All Courses":
+            if course_text in self._course_map:
+                params["course_id"] = self._course_map[course_text]
+
+        status_text = self.status_combo.findChild(QComboBox).currentText()
+        if status_text and status_text != "All Statuses":
+            params["status"] = status_text.lower()
+
+        return params
+
+    # ── Handle responses ──
+
+    def _handle_courses(self, result):
+        self._workers = [w for w in self._workers if not w.isFinished()]
+        if not result.ok:
+            return
+        courses = result.data or []
+        combo = self.course_combo.findChild(QComboBox)
+        current = combo.currentText()
+        combo.clear()
+        combo.addItem("All Courses")
+        self._course_map = {}
+        for c in courses:
+            name = c.get("name", "")
+            combo.addItem(name)
+            self._course_map[name] = c["id"]
+        # restore selection
+        idx = combo.findText(current)
+        if idx >= 0:
+            combo.setCurrentIndex(idx)
+
+    def _handle_records(self, result):
+        self._workers = [w for w in self._workers if not w.isFinished()]
+        if not result.ok:
+            return
+        body = result.data or {}
+        records = body.get("records", body if isinstance(body, list) else [])
+        total = body.get("total", len(records))
+        page = body.get("page", self._current_page)
+        per_page = body.get("per_page", 15)
+
+        self.table.setRowCount(0)
+        self.table.setRowCount(len(records))
+
+        for r, rec in enumerate(records):
+            # Student name
+            self.table.setItem(r, 0, QTableWidgetItem(rec.get("student_name", "")))
+            # Student ID / student_no — from student relation if present
+            sid = rec.get("student_no", "")
+            if not sid and rec.get("student_id"):
+                sid = str(rec["student_id"])
+            self.table.setItem(r, 1, QTableWidgetItem(sid))
+            # Course
+            self.table.setItem(r, 2, QTableWidgetItem(rec.get("course_name", "")))
+            # Check-in time
+            raw_time = rec.get("checkin_time", "")
+            display_time = raw_time
+            if raw_time and "T" in raw_time:
+                display_time = raw_time.replace("T", " ")
+            self.table.setItem(r, 3, QTableWidgetItem(display_time))
+            # Status badge
+            status = rec.get("status", "").upper()
+            col = self.table.cellWidget(r, 4)
+            if col:
+                self.table.removeCellWidget(r, 4)
             self.table.setCellWidget(r, 4, _status_badge(status))
-
-            conf_item = QTableWidgetItem(conf)
+            # Confidence
+            conf = rec.get("confidence")
+            if conf is not None:
+                conf_text = f"{float(conf) * 100:.1f}%"
+            else:
+                conf_text = "--"
+            conf_item = QTableWidgetItem(conf_text)
             conf_item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter)
+            if status == "ABSENT":
+                conf_item.setForeground(Qt.GlobalColor.gray)
             self.table.setItem(r, 5, conf_item)
 
-        # Summary bar
-        self.stat_total.val_lbl.setText("1,248")
-        self.stat_present.val_lbl.setText("1,102")
-        self.stat_present.pct_lbl.setText("88%")
-        self.stat_late.val_lbl.setText("94")
-        self.stat_late.pct_lbl.setText("7.5%")
-        self.stat_absent.val_lbl.setText("52")
-        self.stat_absent.pct_lbl.setText("4.5%")
+        # Pagination label
+        start = (page - 1) * per_page + 1 if total > 0 else 0
+        end = min(page * per_page, total)
+        self.pag_label.setText(f"Showing {start} to {end} of {total} entries")
+        self.page_label.setText(f"Page {page}")
+        self.prev_btn.setEnabled(page > 1)
+        self.next_btn.setEnabled(end < total)
 
-        self.pag_label.setText("Showing 1 to 6 of 1,248 entries")
+    def _handle_stats(self, result):
+        self._workers = [w for w in self._workers if not w.isFinished()]
+        if not result.ok:
+            return
+        s = result.data or {}
+        total = s.get("total", 0)
+        present = s.get("present", 0)
+        late = s.get("late", 0)
+        absent = s.get("absent", 0)
+        rate = s.get("rate", 0.0)
+
+        self.stat_total.val_lbl.setText(str(total))
+        self.stat_present.val_lbl.setText(str(present))
+        self.stat_present.pct_lbl.setText(f"{rate:.1f}%")
+
+        late_pct = round(late / total * 100, 1) if total else 0.0
+        absent_pct = round(absent / total * 100, 1) if total else 0.0
+        self.stat_late.val_lbl.setText(str(late))
+        self.stat_late.pct_lbl.setText(f"{late_pct}%")
+        self.stat_absent.val_lbl.setText(str(absent))
+        self.stat_absent.pct_lbl.setText(f"{absent_pct}%")
+
+    # ── Pagination ──
+
+    def _on_search(self):
+        self._current_page = 1
+        self._fetch_records()
+        self._fetch_stats()
+
+    def _prev_page(self):
+        if self._current_page > 1:
+            self._current_page -= 1
+            self._fetch_records()
+
+    def _next_page(self):
+        self._current_page += 1
+        self._fetch_records()
