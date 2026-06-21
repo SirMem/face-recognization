@@ -16,11 +16,24 @@ class Attendance(db.Model):
     student = db.relationship("Student", lazy="joined")
     course = db.relationship("Course", lazy="joined")
 
+    @property
+    def student_name(self):
+        return self.student.name if self.student else None
+
+    @property
+    def student_no(self):
+        return self.student.student_no if self.student else None
+
+    @property
+    def course_name(self):
+        return self.course.name if self.course else None
+
     def to_dict(self):
         return {
             "id": self.id,
             "student_id": self.student_id,
             "student_name": self.student.name if self.student else None,
+            "student_no": self.student.student_no if self.student else None,
             "course_id": self.course_id,
             "course_name": self.course.name if self.course else None,
             "checkin_time": self.checkin_time.isoformat() if self.checkin_time else None,

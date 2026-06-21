@@ -7,6 +7,7 @@ from flask_smorest import Blueprint
 
 from app.models import Attendance, Student
 from app.schemas import AttendanceQuerySchema, AttendanceRecordSchema, AttendanceStatsSchema, DashboardStatsSchema
+from app.schemas.attendance import PaginatedAttendanceSchema
 
 blp = Blueprint("attendance", __name__, url_prefix="/attendance", description="考勤记录查询与统计")
 
@@ -14,9 +15,9 @@ blp = Blueprint("attendance", __name__, url_prefix="/attendance", description="�
 @blp.route("", methods=["GET"])
 @jwt_required()
 @blp.arguments(AttendanceQuerySchema, location="query")
-@blp.response(200, AttendanceRecordSchema(many=True))
+@blp.response(200, PaginatedAttendanceSchema)
 def list_attendance(args):
-    """考勤记录列表。支持按课程/班级/学生/日期范围筛选。"""
+    """考勤记录列表。支持按课程/班级/学生/状态/日期范围筛选 + 分页。"""
     q = Attendance.query
 
     if args.get("course_id"):
@@ -25,8 +26,10 @@ def list_attendance(args):
     if args.get("student_id"):
         q = q.filter_by(student_id=args["student_id"])
 
+    if args.get("status"):
+        q = q.filter(Attendance.status == args["status"])
+
     if args.get("class_id"):
-        # Join through student
         q = q.join(Student, Attendance.student_id == Student.id).filter(Student.class_id == args["class_id"])
 
     if args.get("date_from"):
@@ -37,7 +40,20 @@ def list_attendance(args):
         dt_to = datetime.combine(args["date_to"], datetime.max.time())
         q = q.filter(Attendance.checkin_time <= dt_to)
 
-    return q.order_by(Attendance.checkin_time.desc()).all()
+    # Pagination
+    page = args.get("page", 1)
+    per_page = args.get("per_page", 20)
+    total = q.count()
+    records = q.order_by(Attendance.checkin_time.desc()).paginate(
+        page=page, per_page=per_page, error_out=False,
+    )
+
+    return {
+        "records": [r.to_dict() for r in records.items],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+    }
 
 
 @blp.route("/statistics", methods=["GET"])
@@ -59,6 +75,9 @@ def attendance_statistics(args):
 
     if args.get("student_id"):
         q = q.filter_by(student_id=args["student_id"])
+
+    if args.get("status"):
+        q = q.filter(Attendance.status == args["status"])
 
     # Default: last 7 days
     date_from = args.get("date_from")

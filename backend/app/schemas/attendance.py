@@ -19,8 +19,18 @@ class AttendanceQuerySchema(Schema):
     course_id = fields.Int(required=False)
     class_id = fields.Int(required=False)
     student_id = fields.Int(required=False)
+    status = fields.Str(required=False)
     date_from = fields.Date(required=False, metadata={"description": "起始日期 YYYY-MM-DD"})
     date_to = fields.Date(required=False, metadata={"description": "结束日期 YYYY-MM-DD"})
+    page = fields.Int(load_default=1, required=False)
+    per_page = fields.Int(load_default=20, required=False)
+
+
+class PaginatedAttendanceSchema(Schema):
+    records = fields.List(fields.Raw())
+    total = fields.Int()
+    page = fields.Int()
+    per_page = fields.Int()
 
 
 class AttendanceStatsSchema(Schema):
