@@ -196,7 +196,7 @@ class MainWindow(QWidget):
         # ── Wire sidebar nav buttons ──
         for label, route in _route_map.items():
             btn = self.sidebar._nav_btns[label]
-            btn.clicked.connect(lambda _r=route: self._router.navigate(_r))
+            btn.clicked.connect(self._nav_handler(route))
 
         # ── Highlight active nav on route change ──
         self._router.page_changed.connect(
@@ -208,11 +208,18 @@ class MainWindow(QWidget):
 
         # ── Logout → back to login ──
         self.header.logout_btn.clicked.connect(self._logout)
+        signal_bus.logout.connect(self._logout)
 
         # ── Start on dashboard ──
         self._router.navigate("dashboard")
 
         self._apply_styles()
+
+    def _nav_handler(self, route: str):
+        """Factory: return a one-shot slot that navigates to `route`."""
+        def handler(checked: bool):
+            self._router.navigate(route)
+        return handler
 
     def _logout(self):
         from app.pages.login.login_page import LoginPage
