@@ -86,10 +86,13 @@ def register_face():
     try:
         pil_img = Image.open(image_path).convert("RGB")
         face_svc = get_face_service(
-            current_app.config["FACE_MODEL_PATH"],
             current_app.config["FACE_MATCH_THRESHOLD"],
         )
         embedding = face_svc.extract_embedding(pil_img)
+        if embedding is None:
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            abort(422, message="未检测到人脸，请上传包含正脸的照片")
     except Exception as e:
         logger.error("Face embedding failed for student #{}: {}", student_id, e)
         # Clean up file on failure
@@ -143,13 +146,16 @@ def recognize_face():
 
     # Load face service
     face_svc = get_face_service(
-        current_app.config["FACE_MODEL_PATH"],
         current_app.config["FACE_MATCH_THRESHOLD"],
     )
 
     # Extract input embedding
     try:
         input_emb = face_svc.extract_embedding(pil_img)
+        if input_emb is None:
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            abort(422, message="未检测到人脸，请上传包含正脸的照片")
     except Exception as e:
         logger.error("Recognize embedding failed: {}", e)
         if os.path.exists(image_path):
@@ -168,7 +174,7 @@ def recognize_face():
 
     for stu in students:
         stored_emb = _str_to_embedding(stu.face_embedding)
-        if stored_emb is None:
+        if stored_emb is None or stored_emb.shape != input_emb.shape:
             continue
         dist = face_svc.compare(input_emb, stored_emb)
         if dist < best_distance:
@@ -182,12 +188,16 @@ def recognize_face():
     is_match = best_distance < face_svc.threshold
 
     if is_match and best_match:
+        # confidence = 余弦相似度（对 L2 单位向量，等价于 1 - d²/2）
+        cos_sim = 1.0 - (best_distance ** 2) / 2.0
+        confidence = max(0.0, min(1.0, cos_sim))
+
         # Record attendance
         record = Attendance(
             student_id=best_match.id,
             course_id=course_id,
             status="present",
-            confidence=1.0 - (best_distance / face_svc.threshold),  # normalize to 0-1
+            confidence=round(confidence, 4),
         )
         db.session.add(record)
         db.session.commit()

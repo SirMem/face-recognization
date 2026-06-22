@@ -44,3 +44,9 @@ class StudentSchema(Schema):
 class StudentQuerySchema(Schema):
     class_id = fields.Int(required=False)
     has_face = fields.Bool(required=False)
+
+
+# ── Student-Course ──────────────────────────────────────────────────────
+
+class StudentCoursesSchema(Schema):
+    course_ids = fields.List(fields.Int(), required=True)

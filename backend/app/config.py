@@ -37,13 +37,8 @@ class Config:
     LOG_DIR = os.getenv("LOG_DIR",
                         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logs"))
 
-    # Face recognition
-    FACE_MODEL_PATH = os.getenv(
-        "FACE_MODEL_PATH",
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
-                     "waiter-facerecognition-python", "model_data", "facenet_mobilenet.h5")
-    )
-    FACE_MATCH_THRESHOLD = float(os.getenv("FACE_MATCH_THRESHOLD", "0.9"))
+    # Face recognition (ArcFace — insightface auto-downloads model)
+    FACE_MATCH_THRESHOLD = float(os.getenv("FACE_MATCH_THRESHOLD", "1.0"))
 
     # Flask-Smorest
     API_TITLE = "人脸识别考勤系统 API"

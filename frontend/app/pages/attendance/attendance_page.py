@@ -29,32 +29,7 @@ _BRAND = "#003d9b"
 _WHITE = "#ffffff"
 _TABLE_HEADER_BG = "#f0f3ff"
 _TABLE_HOVER = "#f0f3ff"
-_PRESENT_BG = "#00a3bf26"
-_PRESENT_TEXT = "#005a6b"
-_LATE_BG = "#ffab0026"
-_LATE_TEXT = "#8f5b00"
-_ABSENT_BG = "#ff563026"
-_ABSENT_TEXT = "#8f271b"
 _MONO = "'JetBrains Mono'"
-
-
-# ── Status badge ──────────────────────────────────────────────────────────
-
-def _status_badge(text: str) -> QFrame:
-    style_map = {
-        "PRESENT": (_PRESENT_BG, _PRESENT_TEXT),
-        "LATE": (_LATE_BG, _LATE_TEXT),
-        "ABSENT": (_ABSENT_BG, _ABSENT_TEXT),
-    }
-    bg, fg = style_map.get(text.upper(), ("#f0f3ff", _TEXT_SECONDARY))
-    badge = QFrame()
-    badge.setStyleSheet(f"background: {bg}; border-radius: 2px; padding: 2px 8px;")
-    layout = QHBoxLayout(badge)
-    layout.setContentsMargins(8, 2, 8, 2)
-    lbl = QLabel(text.upper())
-    lbl.setStyleSheet(f"color: {fg}; font-size: 12px; font-weight: 700; letter-spacing: 0.6px;")
-    layout.addWidget(lbl)
-    return badge
 
 
 # ── Summary stat card ──────────────────────────────────────────────────────
@@ -141,16 +116,16 @@ class AttendancePage(BasePage):
         left = QVBoxLayout()
         left.setContentsMargins(0, 0, 0, 0)
         left.setSpacing(0)
-        title = QLabel("Attendance Records")
+        title = QLabel("考勤记录")
         title.setStyleSheet(f"color: {_TEXT_PRIMARY}; font-size: 32px; font-weight: 700; letter-spacing: -0.64px;")
         left.addWidget(title)
-        subtitle = QLabel("Review and manage historical check-in data.")
+        subtitle = QLabel("查看和管理历史打卡数据。")
         subtitle.setStyleSheet(f"color: {_TEXT_SECONDARY}; font-size: 14px;")
         left.addWidget(subtitle)
         h_layout.addLayout(left)
         h_layout.addStretch()
 
-        self.export_btn = QPushButton("  Export CSV")
+        self.export_btn = QPushButton("  导出 CSV")
         self.export_btn.setObjectName("exportCsvBtn")
         self.export_btn.setStyleSheet(f"""
             #exportCsvBtn {{
@@ -188,16 +163,16 @@ class AttendancePage(BasePage):
         filter_layout.setContentsMargins(16, 16, 16, 16)
         filter_layout.setSpacing(16)
 
-        self.date_combo = self._filter_dropdown("DATE RANGE", ["Last 7 Days", "Today", "This Month", "All Time"])
-        self.course_combo = self._filter_dropdown("COURSE", ["All Courses"])
-        self.status_combo = self._filter_dropdown("STATUS", ["All Statuses", "Present", "Late", "Absent"])
+        self.date_combo = self._filter_dropdown("日期范围", ["最近7天", "今天", "本月", "全部"])
+        self.course_combo = self._filter_dropdown("课程", ["全部课程"])
+        self.status_combo = self._filter_dropdown("状态", ["全部状态", "已签到", "迟到", "缺勤"])
 
         filter_layout.addWidget(self.date_combo)
         filter_layout.addWidget(self.course_combo)
         filter_layout.addWidget(self.status_combo)
         filter_layout.addStretch()
 
-        search_btn = QPushButton("Search")
+        search_btn = QPushButton("搜索")
         search_btn.setObjectName("searchBtn")
         search_btn.setStyleSheet(f"""
             #searchBtn {{
@@ -226,10 +201,10 @@ class AttendancePage(BasePage):
         summary.setContentsMargins(0, 0, 0, 0)
         summary.setSpacing(24)
 
-        self.stat_total = StatCard("TOTAL RECORDS", "—")
-        self.stat_present = StatCard("PRESENT", "—", pct="—", pct_color=_PRESENT_TEXT)
-        self.stat_late = StatCard("LATE", "—", pct="—", pct_color=_LATE_TEXT)
-        self.stat_absent = StatCard("ABSENT", "—", pct="—", pct_color=_ABSENT_TEXT)
+        self.stat_total = StatCard("总记录", "—")
+        self.stat_present = StatCard("已签到", "—", pct="—", pct_color="#005a6b")
+        self.stat_late = StatCard("迟到", "—", pct="—", pct_color="#8f5b00")
+        self.stat_absent = StatCard("缺勤", "—", pct="—", pct_color="#8f271b")
 
         summary.addWidget(self.stat_total)
         summary.addWidget(self.stat_present)
@@ -257,12 +232,16 @@ class AttendancePage(BasePage):
 
         self.table = QTableWidget()
         self.table.setObjectName("attTable")
-        self.table.setColumnCount(6)
+        self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels([
-            "STUDENT NAME", "STUDENT ID", "COURSE",
-            "CHECK-IN TIME", "STATUS", "CONFIDENCE",
+            "学生姓名", "学号",
+            "打卡时间", "置信度",
         ])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        h = self.table.horizontalHeader()
+        h.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)   # NAME
+        h.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)   # ID
+        h.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)   # CHECK-IN TIME
+        h.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)  # CONFIDENCE
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
@@ -311,25 +290,25 @@ class AttendancePage(BasePage):
         pag_layout = QHBoxLayout(pagination)
         pag_layout.setContentsMargins(16, 12, 16, 12)
 
-        self.pag_label = QLabel("Showing 0 of 0 entries")
+        self.pag_label = QLabel("共 0 条记录")
         self.pag_label.setStyleSheet(f"color: {_TEXT_SECONDARY}; font-size: 14px;")
         pag_layout.addWidget(self.pag_label)
 
         pag_layout.addStretch()
 
         # prev / next buttons
-        self.prev_btn = QPushButton("Prev")
+        self.prev_btn = QPushButton("上一页")
         self.prev_btn.setFixedHeight(28)
         self.prev_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.prev_btn.setStyleSheet(self._pag_btn_style())
         self.prev_btn.clicked.connect(self._prev_page)
         pag_layout.addWidget(self.prev_btn)
 
-        self.page_label = QLabel("Page 1")
+        self.page_label = QLabel("第 1 页")
         self.page_label.setStyleSheet(f"color: {_TEXT_PRIMARY}; font-size: 14px; padding: 0 12px;")
         pag_layout.addWidget(self.page_label)
 
-        self.next_btn = QPushButton("Next")
+        self.next_btn = QPushButton("下一页")
         self.next_btn.setFixedHeight(28)
         self.next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.next_btn.setStyleSheet(self._pag_btn_style())
@@ -450,25 +429,26 @@ class AttendancePage(BasePage):
 
         # ponytail: date range mapped to date_from/date_to
         date_text = self.date_combo.findChild(QComboBox).currentText()
-        if date_text == "Today":
+        if date_text == "今天":
             from datetime import date
             params["date_from"] = str(date.today())
             params["date_to"] = str(date.today())
-        elif date_text == "This Month":
+        elif date_text == "本月":
             from datetime import date
             today = date.today()
             params["date_from"] = today.replace(day=1).isoformat()
             params["date_to"] = str(today)
-        # "Last 7 Days" / "All Time" → 不传参，后端默认 last 7 days
+        # "最近7天" / "全部" → 不传参，后端默认 last 7 days
 
         course_text = self.course_combo.findChild(QComboBox).currentText()
-        if course_text and course_text != "All Courses":
+        if course_text and course_text != "全部课程":
             if course_text in self._course_map:
                 params["course_id"] = self._course_map[course_text]
 
         status_text = self.status_combo.findChild(QComboBox).currentText()
-        if status_text and status_text != "All Statuses":
-            params["status"] = status_text.lower()
+        if status_text and status_text != "全部状态":
+            status_map = {"已签到": "present", "迟到": "late", "缺勤": "absent"}
+            params["status"] = status_map.get(status_text, status_text.lower())
 
         return params
 
@@ -482,7 +462,7 @@ class AttendancePage(BasePage):
         combo = self.course_combo.findChild(QComboBox)
         current = combo.currentText()
         combo.clear()
-        combo.addItem("All Courses")
+        combo.addItem("全部课程")
         self._course_map = {}
         for c in courses:
             name = c.get("name", "")
@@ -509,25 +489,17 @@ class AttendancePage(BasePage):
         for r, rec in enumerate(records):
             # Student name
             self.table.setItem(r, 0, QTableWidgetItem(rec.get("student_name", "")))
-            # Student ID / student_no — from student relation if present
+            # Student ID
             sid = rec.get("student_no", "")
             if not sid and rec.get("student_id"):
                 sid = str(rec["student_id"])
             self.table.setItem(r, 1, QTableWidgetItem(sid))
-            # Course
-            self.table.setItem(r, 2, QTableWidgetItem(rec.get("course_name", "")))
             # Check-in time
             raw_time = rec.get("checkin_time", "")
             display_time = raw_time
             if raw_time and "T" in raw_time:
                 display_time = raw_time.replace("T", " ")
-            self.table.setItem(r, 3, QTableWidgetItem(display_time))
-            # Status badge
-            status = rec.get("status", "").upper()
-            col = self.table.cellWidget(r, 4)
-            if col:
-                self.table.removeCellWidget(r, 4)
-            self.table.setCellWidget(r, 4, _status_badge(status))
+            self.table.setItem(r, 2, QTableWidgetItem(display_time))
             # Confidence
             conf = rec.get("confidence")
             if conf is not None:
@@ -536,15 +508,15 @@ class AttendancePage(BasePage):
                 conf_text = "--"
             conf_item = QTableWidgetItem(conf_text)
             conf_item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter)
-            if status == "ABSENT":
+            if rec.get("status", "").upper() == "ABSENT":
                 conf_item.setForeground(Qt.GlobalColor.gray)
-            self.table.setItem(r, 5, conf_item)
+            self.table.setItem(r, 3, conf_item)
 
         # Pagination label
         start = (page - 1) * per_page + 1 if total > 0 else 0
         end = min(page * per_page, total)
-        self.pag_label.setText(f"Showing {start} to {end} of {total} entries")
-        self.page_label.setText(f"Page {page}")
+        self.pag_label.setText(f"第 {start}-{end} 条，共 {total} 条")
+        self.page_label.setText(f"第 {page} 页")
         self.prev_btn.setEnabled(page > 1)
         self.next_btn.setEnabled(end < total)
 

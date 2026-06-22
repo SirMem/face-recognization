@@ -5,11 +5,12 @@ from flask_smorest import Blueprint, abort
 from loguru import logger
 
 from app.extensions import db
-from app.models import Class, Course, Student
+from app.models import Class, Course, Student, StudentCourse
 from app.schemas import (
     ClassQuerySchema, ClassSchema,
     CourseSchema,
     StudentQuerySchema, StudentSchema,
+    StudentCoursesSchema,
 )
 from app.decorators import role_required
 
@@ -245,3 +246,37 @@ def delete_student(student_id):
     db.session.delete(student)
     db.session.commit()
     logger.info("Student #{} deleted", student_id)
+
+
+# ── Student-Course enrollment ──────────────────────────────────────────
+
+
+@blp.route("/students/<int:student_id>/courses", methods=["GET"])
+@jwt_required()
+@blp.response(200)
+def get_student_courses(student_id):
+    """获取学生已选课程 ID 列表。"""
+    rows = StudentCourse.query.filter_by(student_id=student_id).all()
+    return {"course_ids": [r.course_id for r in rows]}
+
+
+@blp.route("/students/<int:student_id>/courses", methods=["POST"])
+@jwt_required()
+@role_required("admin")
+@blp.arguments(StudentCoursesSchema)
+@blp.response(200)
+def set_student_courses(data, student_id):
+    """设置学生已选课程（全量替换）。"""
+    student = db.session.get(Student, student_id)
+    if not student:
+        abort(404, message="学生不存在")
+
+    StudentCourse.query.filter_by(student_id=student_id).delete()
+    for cid in data["course_ids"]:
+        course = db.session.get(Course, cid)
+        if not course:
+            abort(404, message=f"课程 #{cid} 不存在")
+        db.session.add(StudentCourse(student_id=student_id, course_id=cid))
+    db.session.commit()
+    logger.info("Student #{} enrolled in {} courses", student_id, len(data["course_ids"]))
+    return {"course_ids": data["course_ids"]}

@@ -48,7 +48,7 @@ class LoginPage(BasePage):
         colors = COLORS_LIGHT
         accent = colors["primary_hover"]  # selected Figma node uses the darker brand token
 
-        self.setWindowTitle("VisionAttend Admin Terminal")
+        self.setWindowTitle("VisionAttend 管理终端登录")
         self.setObjectName("loginPage")
         self.setMinimumSize(720, 560)
 
@@ -86,18 +86,18 @@ class LoginPage(BasePage):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         body_layout.addWidget(title)
 
-        subtitle = QLabel("Admin Terminal")
+        subtitle = QLabel("管理终端")
         subtitle.setObjectName("loginSubtitle")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         body_layout.addWidget(subtitle)
         body_layout.addSpacing(24)
 
-        self.username_input = self._input_field(body_layout, "Username", "Enter administrator ID", "👤")
+        self.username_input = self._input_field(body_layout, "用户名", "请输入管理员账号", "👤")
         body_layout.addSpacing(16)
-        self.password_input = self._input_field(body_layout, "Password", "••••••••", "🔒", password=True)
+        self.password_input = self._input_field(body_layout, "密码", "••••••••", "🔒", password=True)
         body_layout.addSpacing(24)
 
-        self.login_btn = QPushButton("Login to Terminal  →")
+        self.login_btn = QPushButton("登录 →")
         self.login_btn.setObjectName("loginSubmit")
         self.login_btn.setFixedHeight(40)
         self.login_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -277,7 +277,7 @@ class LoginPage(BasePage):
         self.username_input.setDisabled(busy)
         self.password_input.setDisabled(busy)
         self.login_btn.setDisabled(busy)
-        self.login_btn.setText("Logging in..." if busy else "Login to Terminal  →")
+        self.login_btn.setText("登录中..." if busy else "登录 →")
 
     def _worker_finished(self):
         self._worker = None

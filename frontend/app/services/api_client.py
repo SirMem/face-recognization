@@ -5,10 +5,13 @@
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
 import requests
+
+from app.core.store import store
 
 
 @dataclass
@@ -25,7 +28,6 @@ class ApiClient:
     def __init__(self, base_url: str = "http://127.0.0.1:5000"):
         self.base_url = base_url.rstrip("/")
         self._session = requests.Session()
-        self._session.headers.update({"Content-Type": "application/json"})
 
     # ── Token 管理 ─────────────────────────────────────────────────────
 
@@ -44,6 +46,11 @@ class ApiClient:
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
         url = f"{self.base_url}{path}"
         kwargs.setdefault("timeout", 10)
+        # ponytail: 所有 service 共享 store.token，避免各实例 session 不同步
+        headers = kwargs.pop("headers", {})
+        if store.token:
+            headers.setdefault("Authorization", f"Bearer {store.token}")
+        kwargs["headers"] = headers
         return self._session.request(method, url, **kwargs)
 
     def _get(self, path: str, params: dict = None) -> ApiResult:
@@ -62,9 +69,8 @@ class ApiClient:
         """上传文件的 POST 请求。"""
         try:
             with open(file_path, "rb") as f:
-                resp = self._session.post(
-                    f"{self.base_url}{path}",
-                    data=data,
+                resp = self._request(
+                    "POST", path, data=data,
                     files={"image": ("face.jpg", f, "image/jpeg")},
                     timeout=30,
                 )
@@ -78,11 +84,19 @@ class ApiClient:
     def _handle(resp: requests.Response) -> ApiResult:
         try:
             if resp.status_code in (200, 201):
-                data = resp.json() if resp.content else None
+                try:
+                    data = resp.json() if resp.content else None
+                except (json.JSONDecodeError, ValueError):
+                    data = None
                 return ApiResult(ok=True, data=data, code=resp.status_code)
             if resp.status_code == 204:
                 return ApiResult(ok=True, data=None, code=204)
-            msg = resp.json().get("message", "请求失败") if resp.content else "请求失败"
+            try:
+                msg = resp.json().get("message", "请求失败") if resp.content else "请求失败"
+            except (json.JSONDecodeError, ValueError):
+                # ponytail: non-JSON body → show status + snippet for debugging
+                snippet = resp.text[:80] if resp.content else ""
+                msg = f"服务器返回了非 JSON 内容 (HTTP {resp.status_code}){': ' + snippet if snippet else ''}"
             return ApiResult(ok=False, message=msg, code=resp.status_code)
         except requests.ConnectionError:
             return ApiResult(ok=False, message="无法连接到服务器，请确保后端已启动")

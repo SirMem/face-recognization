@@ -17,6 +17,10 @@ class Student(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now(), onupdate=db.func.now())
 
+    @property
+    def has_face(self) -> bool:
+        return bool(self.face_embedding)
+
     def to_dict(self):
         return {
             "id": self.id,

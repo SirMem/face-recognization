@@ -33,5 +33,14 @@ class StudentService(ApiClient):
     def delete_class(self, class_id: int) -> ApiResult:
         return self._delete(f"/classes/{class_id}")
 
+    def update(self, student_id: int, data: dict) -> ApiResult:
+        return self._put(f"/students/{student_id}", data)
+
+    def get_courses(self, student_id: int) -> ApiResult:
+        return self._get(f"/students/{student_id}/courses")
+
+    def set_courses(self, student_id: int, course_ids: list[int]) -> ApiResult:
+        return self._post(f"/students/{student_id}/courses", {"course_ids": course_ids})
+
 
 student_service = StudentService()

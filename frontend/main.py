@@ -47,7 +47,7 @@ class BrandHeader(QFrame):
         col.setSpacing(0)
         title = QLabel("VisionAttend")
         title.setObjectName("brandTitle")
-        subtitle = QLabel("ADMIN TERMINAL")
+        subtitle = QLabel("管理终端")
         subtitle.setObjectName("brandSubtitle")
         col.addWidget(title)
         col.addWidget(subtitle)
@@ -78,10 +78,10 @@ class Sidebar(QFrame):
         nav_layout.setSpacing(4)
 
         self._nav_btns: dict[str, QPushButton] = {}
-        for name in ["Dashboard", "Check-in", "Records", "Students", "Courses"]:
+        for name in ["总览", "打卡", "考勤记录", "学生管理", "课程管理"]:
             btn = QPushButton(name)
             btn.setObjectName("navButton")
-            btn.setProperty("active", name == "Dashboard")
+            btn.setProperty("active", name == "总览")
             btn.setFixedHeight(44)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -106,9 +106,9 @@ class Sidebar(QFrame):
         col = QVBoxLayout()
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(0)
-        uname = QLabel("Admin User")
+        uname = QLabel("管理员")
         uname.setObjectName("userName")
-        urole = QLabel("System Administrator")
+        urole = QLabel("系统管理员")
         urole.setObjectName("userRole")
         col.addWidget(uname)
         col.addWidget(urole)
@@ -137,7 +137,7 @@ class TopHeader(QFrame):
         layout.setContentsMargins(32, 0, 32, 0)
         layout.addStretch(1)
 
-        self.logout_btn = QPushButton("Logout")
+        self.logout_btn = QPushButton("退出登录")
         self.logout_btn.setObjectName("logoutBtn")
         self.logout_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         layout.addWidget(self.logout_btn)
@@ -184,11 +184,11 @@ class MainWindow(QWidget):
 
         # Map sidebar label → route name
         _route_map = {
-            "Dashboard": "dashboard",
-            "Check-in": "checkin",
-            "Records": "attendance",
-            "Students": "students",
-            "Courses": "courses",
+            "总览": "dashboard",
+            "打卡": "checkin",
+            "考勤记录": "attendance",
+            "学生管理": "students",
+            "课程管理": "courses",
         }
         # Reverse: route → sidebar label — built from the map above
         _label_of = {v: k for k, v in _route_map.items()}

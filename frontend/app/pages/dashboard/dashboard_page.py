@@ -217,18 +217,18 @@ class DashboardPage(BasePage):
         left_col.setContentsMargins(0, 0, 0, 0)
         left_col.setSpacing(0)
 
-        title = QLabel("Overview")
+        title = QLabel("总览")
         title.setStyleSheet(f"color: {_TEXT_PRIMARY}; font-size: 32px; font-weight: 700; letter-spacing: -0.64px;")
         left_col.addWidget(title)
 
-        subtitle = QLabel("Today's attendance summary and quick actions.")
+        subtitle = QLabel("今日考勤概览与快捷操作。")
         subtitle.setStyleSheet(f"color: {_TEXT_SECONDARY}; font-size: 16px;")
         left_col.addWidget(subtitle)
         header_layout.addLayout(left_col)
         header_layout.addStretch()
 
         # Export Report button
-        export_btn = QPushButton("  Export Report")
+        export_btn = QPushButton("  导出报告")
         export_btn.setObjectName("exportBtn")
         export_btn.setStyleSheet(f"""
             #exportBtn {{
@@ -247,7 +247,7 @@ class DashboardPage(BasePage):
         header_layout.addSpacing(12)
 
         # New Session button
-        new_btn = QPushButton("  New Session")
+        new_btn = QPushButton("  新建考勤")
         new_btn.setObjectName("newSessionBtn")
         new_btn.setStyleSheet(f"""
             #newSessionBtn {{
@@ -275,10 +275,10 @@ class DashboardPage(BasePage):
         cards_row.setContentsMargins(0, 0, 0, 0)
         cards_row.setSpacing(24)
 
-        self.card_total = StatCard("TOTAL EXPECTED", "—", "#dae2ff", "✦", subtitle="Across all active courses")
-        self.card_present = StatCard("PRESENT", "—", _GREEN_BG, "✓")
-        self.card_late = StatCard("LATE", "—", _ORANGE_BG, "!", subtitle="Pending review")
-        self.card_absent = StatCard("ABSENT", "—", _RED_BG, "✕")
+        self.card_total = StatCard("总应到", "—", "#dae2ff", "✦", subtitle="所有活跃课程")
+        self.card_present = StatCard("已签到", "—", _GREEN_BG, "✓")
+        self.card_late = StatCard("迟到", "—", _ORANGE_BG, "!", subtitle="待处理")
+        self.card_absent = StatCard("缺勤", "—", _RED_BG, "✕")
 
         cards_row.addWidget(self.card_total)
         cards_row.addWidget(self.card_present)
@@ -314,21 +314,21 @@ class DashboardPage(BasePage):
         # Chart header
         chart_header = QHBoxLayout()
         chart_header.setContentsMargins(0, 0, 0, 0)
-        chart_header.addWidget(QLabel("Attendance Rate Overview"))
+        chart_header.addWidget(QLabel("出勤率概览"))
         chart_header_item = chart_header.itemAt(0)
         chart_header_item.widget().setStyleSheet(f"color: {_TEXT_PRIMARY}; font-size: 20px; font-weight: 600;")
         chart_header.addStretch()
         # Legend
         legend = QHBoxLayout()
         legend.setSpacing(8)
-        for color, text in [(_BRAND, "PRESENT"), (_CHART_ABSENT, "ABSENT")]:
+        for color, text in [(_BRAND, "已签到"), (_CHART_ABSENT, "缺勤")]:
             dot = QLabel(f"●  {text}")
             dot.setStyleSheet(f"color: {color}; font-size: 12px;")
             legend.addWidget(dot)
         chart_header.addLayout(legend)
         chart_layout.addLayout(chart_header)
 
-        subtitle2 = QLabel("Real-time daily progression")
+        subtitle2 = QLabel("每日实时趋势")
         subtitle2.setStyleSheet(f"color: {_TEXT_SECONDARY}; font-size: 16px;")
         chart_layout.addWidget(subtitle2)
         chart_layout.addSpacing(24)
@@ -373,7 +373,7 @@ class DashboardPage(BasePage):
         pct_row.addWidget(self.pct_sign)
         pct_layout.addLayout(pct_row)
 
-        self.pct_label = QLabel("CURRENT EFFICIENCY")
+        self.pct_label = QLabel("当前出勤率")
         self.pct_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.pct_label.setStyleSheet(f"color: {_TEXT_SECONDARY}; font-size: 12px; font-weight: 700; letter-spacing: 1.2px;")
         pct_layout.addWidget(self.pct_label)
@@ -390,14 +390,14 @@ class DashboardPage(BasePage):
         quick_col.setContentsMargins(0, 0, 0, 0)
         quick_col.setSpacing(0)
 
-        quick_title = QLabel("Quick Entry")
+        quick_title = QLabel("快捷入口")
         quick_title.setStyleSheet(f"color: {_TEXT_PRIMARY}; font-size: 20px; font-weight: 600;")
         quick_col.addWidget(quick_title)
         quick_col.addSpacing(24)
 
-        self.action_face = QuickActionCard("📷", "Face Check-in", "Launch live camera feed")
-        self.action_student = QuickActionCard("👤", "Student Management", "Enroll or edit profiles")
-        self.action_records = QuickActionCard("📋", "Attendance Records", "View historical logs")
+        self.action_face = QuickActionCard("📷", "人脸打卡", "启动摄像头进行人脸识别打卡")
+        self.action_student = QuickActionCard("👤", "学生管理", "注册或编辑学生信息")
+        self.action_records = QuickActionCard("📋", "考勤记录", "查看历史考勤数据")
 
         quick_col.addWidget(self.action_face)
         quick_col.addSpacing(8)
